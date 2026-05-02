@@ -13,6 +13,9 @@
 # testing
 /coverage
 
+# local MVP document storage
+/.data/
+
 # next.js
 /.next/
 /out/
