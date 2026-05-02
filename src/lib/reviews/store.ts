@@ -5,6 +5,8 @@ import { extractReferenceFields } from "@/lib/ai/extractReference";
 import { detectInvoiceExceptions } from "@/lib/detectors";
 import type { DocumentType, StoredDocument } from "@/lib/documents/store";
 import { demoInvoices } from "@/lib/demo-data";
+import { getRequestContext } from "@/lib/auth/org";
+import { insertReviewCaseDb, readReviewCasesDb } from "@/lib/reviews/db-store";
 import type { InvoiceException, ReviewCase } from "@/lib/types";
 
 const dataDir = path.join(process.cwd(), ".data");
@@ -63,7 +65,7 @@ export async function createReviewCase({
   const now = new Date();
   const reviewCase: ReviewCase = {
     ...invoice,
-    id: `case-${crypto.randomUUID()}`,
+    id: crypto.randomUUID(),
     orgId: invoiceDocument.orgId,
     supplierId: invoiceDocument.supplierId ?? "supplier-demo",
     supplierRisk: exceptions.some((item) => item.severity === "critical")
@@ -86,6 +88,10 @@ export async function createReviewCase({
     extractedReferenceText,
   };
 
+  if (await insertReviewCaseDb(reviewCase)) {
+    return reviewCase;
+  }
+
   const reviewCases = await readReviewCases();
   reviewCases.unshift(reviewCase);
   await writeReviewCases(reviewCases);
@@ -94,14 +100,32 @@ export async function createReviewCase({
 }
 
 export async function getAllInvoicesForReview() {
+  const context = await getRequestContext();
+  const dbCases = await readReviewCasesDb(context.orgId);
+  if (dbCases) {
+    return [...dbCases, ...demoInvoices];
+  }
+
   const reviewCases = await readReviewCases();
-  return [...reviewCases, ...demoInvoices];
+  return [
+    ...reviewCases.filter((reviewCase) => reviewCase.orgId === context.orgId),
+    ...demoInvoices,
+  ];
 }
 
 export async function getReviewInvoiceById(id: string) {
+  const context = await getRequestContext();
+  const dbCases = await readReviewCasesDb(context.orgId);
+  const dbCase = dbCases?.find((reviewCase) => reviewCase.id === id);
+  if (dbCase) {
+    return dbCase;
+  }
+
   const reviewCases = await readReviewCases();
   return (
-    reviewCases.find((reviewCase) => reviewCase.id === id) ??
+    reviewCases.find(
+      (reviewCase) => reviewCase.id === id && reviewCase.orgId === context.orgId,
+    ) ??
     demoInvoices.find((invoice) => invoice.id === id) ??
     null
   );

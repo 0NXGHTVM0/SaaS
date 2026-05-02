@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
+import { getRequestContext } from "@/lib/auth/org";
+import { readDocumentsDb } from "@/lib/documents/db-store";
 import { readDocuments } from "@/lib/documents/store";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const documents = await readDocuments();
+  const context = await getRequestContext();
+  const documents =
+    (await readDocumentsDb(context.orgId)) ??
+    (await readDocuments()).filter((document) => document.orgId === context.orgId);
 
   return NextResponse.json({
     documents: documents.map((document) => ({

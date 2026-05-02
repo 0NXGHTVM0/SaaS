@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { insertDocumentsDb } from "@/lib/documents/db-store";
 
 export type DocumentType =
   | "invoice"
@@ -65,6 +66,10 @@ export async function writeDocuments(documents: StoredDocument[]) {
 }
 
 export async function insertDocuments(newDocuments: StoredDocument[]) {
+  if (await insertDocumentsDb(newDocuments)) {
+    return newDocuments;
+  }
+
   const documents = await readDocuments();
   documents.unshift(...newDocuments);
   await writeDocuments(documents);

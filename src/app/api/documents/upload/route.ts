@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { writeFile } from "node:fs/promises";
+import { getRequestContext } from "@/lib/auth/org";
+import type { RequestContext } from "@/lib/auth/org";
 import { extractPdfText } from "@/lib/documents/pdf";
 import {
   getUploadPath,
@@ -22,6 +24,7 @@ const supportedDocumentTypes: DocumentType[] = [
 ];
 
 export async function POST(request: Request) {
+  const context = await getRequestContext();
   const formData = await request.formData();
   const supplierName = getString(formData.get("supplierName"));
   const invoice = formData.get("invoice");
@@ -47,7 +50,7 @@ export async function POST(request: Request) {
 
   const documents = await Promise.all(
     files.map(async ({ file, documentType }) =>
-      saveAndExtractDocument({ file, documentType, supplierName }),
+      saveAndExtractDocument({ file, documentType, supplierName, context }),
     ),
   );
 
@@ -98,10 +101,12 @@ async function saveAndExtractDocument({
   file,
   documentType,
   supplierName,
+  context,
 }: {
   file: File;
   documentType: DocumentType;
   supplierName: string | null;
+  context: RequestContext;
 }): Promise<StoredDocument> {
   const id = crypto.randomUUID();
   const bytes = Buffer.from(await file.arrayBuffer());
@@ -112,7 +117,7 @@ async function saveAndExtractDocument({
 
   const baseDocument = {
     id,
-    orgId: "demo-org",
+    orgId: context.orgId,
     supplierId: null,
     supplierName,
     documentType,
@@ -121,7 +126,7 @@ async function saveAndExtractDocument({
     fileName: file.name,
     mimeType: file.type || "application/pdf",
     fileSize: file.size,
-    uploadedBy: "demo-user",
+    uploadedBy: context.userId,
     uploadedAt: new Date().toISOString(),
   };
 
