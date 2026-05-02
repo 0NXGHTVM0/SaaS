@@ -1,4 +1,11 @@
 import { z } from "zod";
+import {
+  extractLineItems,
+  findCurrency,
+  findPaymentTerms,
+  findSupplierName,
+  parseMoney,
+} from "@/lib/ai/parse-helpers";
 
 export const extractedReferenceSchema = z.object({
   documentType: z.enum(["po", "quote", "contract", "delivery_note"]),
@@ -22,15 +29,33 @@ export type ExtractedReferenceResult = z.infer<
 export async function extractReferenceFields(
   extractedText: string,
   documentType: ExtractedReferenceResult["documentType"],
+  fallbackSupplierName: string | null = null,
 ): Promise<ExtractedReferenceResult> {
-  // MVP hook: replace this placeholder with structured LLM output.
+  const lineItems = extractLineItems(extractedText);
+  const total = parseMoney(
+    extractedText.match(/\b(?:expected\s*)?total\b[^\d]{0,12}([\d.,]+)/i)?.[1],
+  );
+
   return extractedReferenceSchema.parse({
     documentType,
-    supplierName: extractedText.includes("Global Office")
-      ? "Global Office Supplies Ltd."
-      : null,
-    expectedCurrency: "EUR",
-    expectedPaymentTerms: "Net 30",
-    expectedLineItems: [],
+    supplierName: findSupplierName(extractedText, fallbackSupplierName),
+    expectedCurrency: findCurrency(extractedText) ?? "EUR",
+    expectedPaymentTerms: findPaymentTerms(extractedText),
+    expectedLineItems:
+      lineItems.length > 0
+        ? lineItems.map((item) => ({
+            description: item.description,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            expectedTotal: item.total,
+          }))
+        : [
+            {
+              description: "Expected document total",
+              quantity: 1,
+              unitPrice: total,
+              expectedTotal: total,
+            },
+          ],
   });
 }

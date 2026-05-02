@@ -9,6 +9,7 @@ import {
   type DocumentType,
   type StoredDocument,
 } from "@/lib/documents/store";
+import { createReviewCase } from "@/lib/reviews/store";
 
 export const runtime = "nodejs";
 
@@ -52,9 +53,32 @@ export async function POST(request: Request) {
 
   await insertDocuments(documents);
 
+  const invoiceDocument =
+    documents.find((document) => document.documentType === "invoice") ?? null;
+  const referenceDocument =
+    documents.find(
+      (document) =>
+        document.documentType !== "invoice" &&
+        document.extractionStatus === "completed",
+    ) ?? null;
+  const reviewCase =
+    invoiceDocument?.extractionStatus === "completed"
+      ? await createReviewCase({ invoiceDocument, referenceDocument })
+      : null;
+
   return NextResponse.json(
     {
       documents: documents.map(toPublicDocument),
+      reviewCase: reviewCase
+        ? {
+            id: reviewCase.id,
+            invoiceNumber: reviewCase.invoiceNumber,
+            supplierName: reviewCase.supplierName,
+            exceptionScore: reviewCase.exceptionScore,
+            exceptionsCount: reviewCase.exceptions.length,
+            href: `/dashboard/invoices/${reviewCase.id}`,
+          }
+        : null,
       nextJob: "document/extract",
       summary: {
         uploaded: documents.length,

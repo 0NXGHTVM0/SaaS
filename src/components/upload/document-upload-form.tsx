@@ -1,7 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CheckCircle2, FileText, Loader2, UploadCloud, XCircle, Zap } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  CheckCircle2,
+  FileText,
+  Loader2,
+  UploadCloud,
+  XCircle,
+  Zap,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +37,7 @@ type UploadedDocument = {
 type UploadState = "idle" | "uploading" | "completed" | "failed";
 
 export function DocumentUploadForm() {
+  const router = useRouter();
   const [supplierName, setSupplierName] = useState("");
   const [defaultCurrency, setDefaultCurrency] = useState("EUR");
   const [referenceType, setReferenceType] = useState("po");
@@ -92,6 +101,10 @@ export function DocumentUploadForm() {
 
       setDocuments(payload.documents);
       setState("completed");
+
+      if (payload.reviewCase?.href) {
+        router.push(payload.reviewCase.href);
+      }
     } catch (uploadError) {
       setState("failed");
       setError(
@@ -260,7 +273,7 @@ function DocumentStatus({ document }: { document: UploadedDocument }) {
         <div>
           <p className="font-medium">{document.fileName}</p>
           <p className="mt-1 text-xs text-slate-500">
-            {document.documentType} · {formatBytes(document.fileSize)}
+            {document.documentType} / {formatBytes(document.fileSize)}
           </p>
         </div>
         <Badge

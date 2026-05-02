@@ -5,10 +5,12 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { demoInvoices } from "@/lib/demo-data";
+import { getAllInvoicesForReview } from "@/lib/reviews/store";
 import { cn } from "@/lib/utils";
 
-export default function InvoicesPage() {
+export default async function InvoicesPage() {
+  const invoices = await getAllInvoicesForReview();
+
   return (
     <main className="min-w-0 space-y-4 p-3 md:p-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -63,7 +65,7 @@ export default function InvoicesPage() {
           </Tabs>
         </CardHeader>
         <CardContent className="p-0">
-          <InvoiceTable invoices={demoInvoices} />
+          <InvoiceTable invoices={invoices} />
         </CardContent>
       </Card>
     </main>

@@ -71,3 +71,11 @@ export type DemoInvoice = ExtractedInvoice & {
   uploadedAt: string;
   detectedAt: string;
 };
+
+export type ReviewCase = DemoInvoice & {
+  orgId: string;
+  invoiceDocumentId: string;
+  referenceDocumentId: string | null;
+  extractedInvoiceText: string;
+  extractedReferenceText: string | null;
+};

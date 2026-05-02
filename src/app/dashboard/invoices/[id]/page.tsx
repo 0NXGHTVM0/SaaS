@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { demoInvoices, getInvoiceById } from "@/lib/demo-data";
+import { demoInvoices } from "@/lib/demo-data";
+import { getReviewInvoiceById } from "@/lib/reviews/store";
 
 export default async function InvoiceDetailPage({
   params,
@@ -14,7 +15,7 @@ export default async function InvoiceDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const invoice = getInvoiceById(id);
+  const invoice = await getReviewInvoiceById(id);
 
   if (!invoice) {
     notFound();
