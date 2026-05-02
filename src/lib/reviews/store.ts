@@ -101,9 +101,11 @@ export async function createReviewCase({
 
 export async function getAllInvoicesForReview() {
   const context = await getRequestContext();
-  const dbCases = await readReviewCasesDb(context.orgId);
-  if (dbCases) {
-    return [...dbCases, ...demoInvoices];
+  if (!context.isDemo) {
+    const dbCases = await readReviewCasesDb(context.orgId);
+    if (dbCases) {
+      return [...dbCases, ...demoInvoices];
+    }
   }
 
   const reviewCases = await readReviewCases();
@@ -115,10 +117,12 @@ export async function getAllInvoicesForReview() {
 
 export async function getReviewInvoiceById(id: string) {
   const context = await getRequestContext();
-  const dbCases = await readReviewCasesDb(context.orgId);
-  const dbCase = dbCases?.find((reviewCase) => reviewCase.id === id);
-  if (dbCase) {
-    return dbCase;
+  if (!context.isDemo) {
+    const dbCases = await readReviewCasesDb(context.orgId);
+    const dbCase = dbCases?.find((reviewCase) => reviewCase.id === id);
+    if (dbCase) {
+      return dbCase;
+    }
   }
 
   const reviewCases = await readReviewCases();

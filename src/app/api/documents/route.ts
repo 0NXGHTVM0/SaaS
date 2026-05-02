@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export async function GET() {
   const context = await getRequestContext();
   const documents =
-    (await readDocumentsDb(context.orgId)) ??
+    (!context.isDemo ? await readDocumentsDb(context.orgId) : null) ??
     (await readDocuments()).filter((document) => document.orgId === context.orgId);
 
   return NextResponse.json({
